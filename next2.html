@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Live CSS Card Creator & Class Exporter with Presets</title>
+    <style>
+      /* Reset and base */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #eef2f7;
+        color: #222;
+        min-height: 100vh;
+      }
+      header {
+        background: #0077b6;
+        color: white;
+        padding: 1rem 1rem;
+        text-align: center;
+        font-weight: 700;
+        font-size: 1.4rem;
+        user-select: none;
+      }
+      main {
+        max-width: 960px;
+        margin: 1rem auto 3rem;
+        padding: 0 1rem;
+        width: 100%;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+
+      /* Controls panel */
+      #controls {
+        flex: 1 1 400px;
+        background: white;
+        box-shadow: 0 8px 25px rgb(0 0 0 / 0.1);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      #controls h2 {
+        margin-top: 0;
+        font-weight: 700;
+        color: #023047;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.15rem;
+        color: #023047;
+        font-size: 0.95rem;
+      }
+      select,
+      input[type='range'],
+      input[type='color'] {
+        width: 100%;
+        padding: 0.25rem 0.5rem;
+        margin-bottom: 0.75rem;
+        border-radius: 6px;
+        border: 1px solid #aaa;
+        font-size: 0.95rem;
+        background-color: white;
+        cursor: pointer;
+        appearance: none;
+      }
+      /* Sliders styles */
+      /* Chrome, Edge, Safari */
+      input[type='range']::-webkit-slider-runnable-track {
+        height: 6px;
+        background: #0077b6;
+        border-radius: 3px;
+      }
+      input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        background: #ffffff;
+        border: 2px solid #0077b6;
+        border-radius: 50%;
+        margin-top: -6px;
+        cursor: pointer;
+        box-shadow: 0 0 3px rgb(0 0 0 / 0.2);
+        transition: box-shadow 0.2s ease;
+      }
+      input[type='range']:focus::-webkit-slider-thumb,
+      input[type='range']:hover::-webkit-slider-thumb {
+        box-shadow: 0 0 8px #0077b6;
+      }
+      /* Firefox */
+      input[type='range']::-moz-range-track {
+        height: 6px;
+        background: #0077b6;
+        border-radius: 3px;
+      }
+      input[type='range']::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        background: #ffffff;
+        border: 2px solid #0077b6;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 3px rgb(0 0 0 / 0.2);
+        transition: box-shadow 0.2s ease;
+      }
+      input[type='range']:focus::-moz-range-thumb,
+      input[type='range']:hover::-moz-range-thumb {
+        box-shadow: 0 0 8px #0077b6;
+      }
+      /* IE */
+      input[type='range']::-ms-track {
+        width: 100%;
+        height: 6px;
+        background: transparent;
+        border-color: transparent;
+        color: transparent;
+      }
+      input[type='range']::-ms-fill-lower {
+        background: #0077b6;
+        border-radius: 3px;
+      }
+      input[type='range']::-ms-fill-upper {
+        background: #cfdce6;
+        border-radius: 3px;
+      }
+      input[type='range']::-ms-thumb {
+        width: 18px;
+        height: 18px;
+        background: #ffffff;
+        border: 2px solid #0077b6;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+        transition: box-shadow 0.2s ease;
+        margin-top: 0; /* IE buggy fix */
+      }
+      input[type='range']:focus::-ms-thumb,
+      input[type='range']:hover::-ms-thumb {
+        box-shadow: 0 0 8px #0077b6;
+      }
+
+      .range-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #555;
+        margin-bottom: 0.25rem;
+      }
+
+      /* Color picker simple styled box on right side */
+
+      .color-picker-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        cursor: pointer;
+        margin-bottom: 0.75rem;
+        user-select: none;
+      }
+      .color-picker-container input[type='color'] {
+        width: 150px;
+        height: 28px;
+        cursor: pointer;
+      }
+      /* Remove default color input styles */
+      .color-picker-container
+        input[type='color']::-webkit-color-swatch-wrapper {
+        padding: 0;
+      }
+      .color-picker-container input[type='color']::-webkit-color-swatch {
+        border-radius: 6px;
+      }
+      /* Firefox fix */
+      .color-picker-container input[type='color']::-moz-color-swatch {
+        border-radius: 6px;
+      }
+
+      /* Color label added near input */
+      .color-label {
+        margin-left: 10px;
+        width: 32px;
+        height: 28px;
+        border: 2px solid #0077b6;
+        border-radius: 6px;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+        pointer-events: none;
+      }
+
+      button {
+        font-weight: 700;
+        border-radius: 10px;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.25s ease;
+        padding: 0.6rem 1rem;
+        border: none;
+        font-size: 1rem;
+        display: block;
+        width: 100%;
+        margin-top: 0.6rem;
+      }
+      button#copy-css {
+        background-color: #0077b6;
+        color: white;
+      }
+      button#copy-css:hover:not(:disabled) {
+        background-color: #005f86;
+      }
+      button#copy-css:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+      button#copy-html {
+        background-color: #2a9d8f;
+        color: white;
+      }
+      button#copy-html:hover:not(:disabled) {
+        background-color: #1c235d;
+      }
+      button#copy-html:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+
+      /* Preview area */
+      #preview-wrapper {
+        flex: 0 0 440px;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+      }
+      #card-preview {
+        position: sticky;
+        top: 1rem;
+        width: 100%;
+        min-height: 280px;
+        border-radius: var(--border-radius, 16px);
+        box-shadow: var(--box-shadow, 0 8px 24px rgba(0, 0, 0, 0.12));
+        background: var(--bg-color, white);
+        padding: var(--padding, 20px);
+        color: var(--text-color, #222);
+        display: flex;
+        flex-direction: column;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+      }
+      #card-preview h3 {
+        margin: 0 0 0.5em 0;
+        font-size: var(--title-size, 1.5rem);
+        font-weight: 700;
+        color: var(--title-color, #0077b6);
+      }
+      #card-preview p {
+        flex-grow: 1;
+        font-size: var(--content-size, 1rem);
+        color: var(--content-color, #444);
+        margin: 0 0 1.25rem 0;
+        line-height: 1.4;
+      }
+      #card-preview img {
+        max-width: 100%;
+        border-radius: var(--image-radius, 12px);
+        margin-bottom: var(--image-margin-bottom, 1rem);
+      }
+      #css-code-container {
+        background-color: #f7f9fa;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 1rem;
+        font-family: monospace;
+        font-size: 0.88rem;
+        color: #222;
+        white-space: pre-wrap;
+        user-select: all;
+        line-height: 1.3;
+        max-height: 200px;
+        overflow-y: auto;
+        flex-shrink: 0;
+      }
+
+      /* Responsive */
+      @media (max-width: 740px) {
+        main {
+          flex-direction: column;
+        }
+        #preview-wrapper {
+          width: 100%;
+        }
+        #card-preview {
+          position: relative;
+          top: auto;
+          min-height: auto;
+          margin-bottom: 1rem;
+        }
+        #controls {
+          max-height: none;
+        }
+      }
+      .width-full {
+        width: 100%;
+      }
+
+      #bg-color-picker {
+        width: 100%;
+      }
+      #content-color-picker {
+        width: 100%;
+      }
+      #title-color-picker {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Live CSS Card Creator & Class Exporter with Presets</header>
+    <main>
+      <section id="controls" aria-label="Card style controls">
+        <h2>Choose a Preset Style</h2>
+        <label for="preset-select">Preset Style</label>
+        <select id="preset-select" aria-describedby="preset-desc">
+          <option value="default">Default</option>
+          <option value="classic">Classic</option>
+          <option value="imageTop">Image Top</option>
+          <option value="minimalist">Minimalist</option>
+          <option value="gradient">Gradient</option>
+          <option value="softShadow">Soft Shadow</option>
+          <option value="overlayText">Overlay Text</option>
+        </select>
+        <p
+          id="preset-desc"
+          style="
+            color: #555;
+            font-size: 0.9rem;
+            margin-top: -0.75rem;
+            margin-bottom: 1rem;
+          "
+        >
+          Select a preset style to start from, then customize it below.
+        </p>
+        <h2>Customize Card Styles</h2>
+
+        <label for="bg-color-picker">Background Color</label>
+        <div class="color-picker-container width-full">
+          <input
+            class="width-full"
+            type="color"
+            id="bg-color-picker"
+            value="#ffffff"
+            title="Background Color"
+          />
+          <div
+            class="color-label none"
+            id="bg-color-label"
+            style="display: none"
+          ></div>
+        </div>
+
+        <label for="border-radius-range"
+          >Border Radius
+          <span id="border-radius-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="border-radius-range"
+          min="0"
+          max="64"
+          value="16"
+          step="1"
+        />
+
+        <label for="box-shadow-opacity-range"
+          >Box Shadow Opacity
+          <span id="box-shadow-opacity-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="box-shadow-opacity-range"
+          min="0"
+          max="100"
+          value="12"
+          step="1"
+        />
+
+        <label for="box-shadow-blur-range"
+          >Box Shadow Blur Radius
+          <span id="box-shadow-blur-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="box-shadow-blur-range"
+          min="0"
+          max="72"
+          value="24"
+          step="1"
+        />
+
+        <label for="padding-range"
+          >Padding (px) <span id="padding-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="padding-range"
+          min="8"
+          max="48"
+          value="20"
+          step="1"
+        />
+
+        <label for="title-color-picker">Title Color</label>
+        <div class="color-picker-container width-full">
+          <input
+            class="width-full"
+            type="color"
+            id="title-color-picker"
+            value="#0077b6"
+            title="Title Color"
+          />
+          <div
+            class="color-label none"
+            id="title-color-label"
+            style="display: none"
+          ></div>
+        </div>
+
+        <label for="title-size-range"
+          >Title Font Size (px)
+          <span id="title-size-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="title-size-range"
+          min="12"
+          max="48"
+          value="24"
+          step="1"
+        />
+
+        <label for="content-color-picker">Content Text Color</label>
+        <div class="color-picker-container width-full">
+          <input
+            class="width-full"
+            type="color"
+            id="content-color-picker"
+            value="#444444"
+            title="Content Text Color"
+          />
+          <div
+            class="color-label"
+            id="content-color-label"
+            style="display: none"
+          ></div>
+        </div>
+
+        <label for="content-size-range"
+          >Content Font Size (px)
+          <span id="content-size-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="content-size-range"
+          min="10"
+          max="28"
+          value="16"
+          step="1"
+        />
+
+        <label for="image-radius-range"
+          >Image Border Radius
+          <span id="image-radius-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="image-radius-range"
+          min="0"
+          max="48"
+          value="12"
+          step="1"
+        />
+
+        <label for="image-margin-bottom-range"
+          >Image Margin Bottom
+          <span id="image-margin-bottom-value" class="range-label"></span
+        ></label>
+        <input
+          type="range"
+          id="image-margin-bottom-range"
+          min="0"
+          max="32"
+          value="16"
+          step="1"
+        />
+
+        <button
+          id="copy-css"
+          type="button"
+          aria-label="Copy generated CSS to clipboard"
+        >
+          Copy CSS Styles to Clipboard
+        </button>
+        <button
+          id="copy-html"
+          type="button"
+          aria-label="Copy generated HTML markup"
+        >
+          Copy Card HTML to Clipboard
+        </button>
+      </section>
+
+      <section id="preview-wrapper" aria-label="Live card preview and CSS">
+        <div
+          id="card-preview"
+          role="region"
+          aria-live="polite"
+          aria-label="Card preview"
+          class="custom-card"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80"
+            alt="Card Image"
+            id="card-image"
+          />
+          <h3 id="card-title">Sample Card Title</h3>
+          <p id="card-content">
+            This is a sample descriptive text content for your card. Adjust the
+            controls to style this card live.
+          </p>
+        </div>
+        <pre
+          id="css-code-container"
+          aria-label="Generated CSS rules"
+        ><code id="css-code"></code></pre>
+      </section>
+    </main>
+
+    <script>
+      ;(() => {
+        // Elements
+        const cardPreview = document.getElementById('card-preview')
+        const cardImage = document.getElementById('card-image')
+        const cardTitle = document.getElementById('card-title')
+        const cardContent = document.getElementById('card-content')
+
+        const presetSelect = document.getElementById('preset-select')
+
+        // Color pickers with labels
+        const colorPickers = [
+          {
+            input: document.getElementById('bg-color-picker'),
+            label: document.getElementById('bg-color-label'),
+          },
+          {
+            input: document.getElementById('title-color-picker'),
+            label: document.getElementById('title-color-label'),
+          },
+          {
+            input: document.getElementById('content-color-picker'),
+            label: document.getElementById('content-color-label'),
+          },
+        ]
+
+        const borderRadiusRange = document.getElementById('border-radius-range')
+        const boxShadowOpacityRange = document.getElementById(
+          'box-shadow-opacity-range'
+        )
+        const boxShadowBlurRange = document.getElementById(
+          'box-shadow-blur-range'
+        )
+        const paddingRange = document.getElementById('padding-range')
+        const titleSizeRange = document.getElementById('title-size-range')
+        const contentSizeRange = document.getElementById('content-size-range')
+        const imageRadiusRange = document.getElementById('image-radius-range')
+        const imageMarginBottomRange = document.getElementById(
+          'image-margin-bottom-range'
+        )
+
+        const borderRadiusValue = document.getElementById('border-radius-value')
+        const boxShadowOpacityValue = document.getElementById(
+          'box-shadow-opacity-value'
+        )
+        const boxShadowBlurValue = document.getElementById(
+          'box-shadow-blur-value'
+        )
+        const paddingValue = document.getElementById('padding-value')
+        const titleSizeValue = document.getElementById('title-size-value')
+        const contentSizeValue = document.getElementById('content-size-value')
+        const imageRadiusValue = document.getElementById('image-radius-value')
+        const imageMarginBottomValue = document.getElementById(
+          'image-margin-bottom-value'
+        )
+
+        const cssCodeEl = document.getElementById('css-code')
+        const copyCssBtn = document.getElementById('copy-css')
+        const copyHtmlBtn = document.getElementById('copy-html')
+
+        // Initialize a new object to store current styles
+        let currentStyles = {}
+
+        const presets = {
+          default: {
+            bgColor: '#ffffff',
+            borderRadius: 16,
+            boxShadowOpacity: 12,
+            boxShadowBlur: 24,
+            padding: 20,
+            titleColor: '#0077b6',
+            titleSize: 24,
+            contentColor: '#444444',
+            contentSize: 16,
+            imageRadius: 12,
+            imageMarginBottom: 16,
+            imgSrc:
+              'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80',
+            cardTitle: 'Sample Card Title',
+            cardContent:
+              'This is a sample descriptive text content for your card. Adjust the controls to style this card live.',
+          },
+          classic: {
+            bgColor: '#ffffff',
+            borderRadius: 16,
+            boxShadowOpacity: 18,
+            boxShadowBlur: 38,
+            padding: 24,
+            titleColor: '#264653',
+            titleSize: 26,
+            contentColor: '#555555',
+            contentSize: 16,
+            imageRadius: 12,
+            imageMarginBottom: 20,
+            imgSrc:
+              'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=600&q=80',
+            cardTitle: 'Classic Card',
+            cardContent:
+              'A classic styled card with soft shadow and a natural feel.',
+          },
+          imageTop: {
+            bgColor: '#ffffff',
+            borderRadius: 16,
+            boxShadowOpacity: 15,
+            boxShadowBlur: 28,
+            padding: 20,
+            titleColor: '#264653',
+            titleSize: 24,
+            contentColor: '#666666',
+            contentSize: 15,
+            imageRadius: 16,
+            imageMarginBottom: 18,
+            imgSrc:
+              'https://images.unsplash.com/photo-1468071174046-657d9d351a40?auto=format&fit=crop&w=600&q=80',
+            cardTitle: 'Image Top Card',
+            cardContent:
+              'Card with image displayed on top and rounded corners.',
+          },
+          minimalist: {
+            bgColor: '#f9f9f9',
+            borderRadius: 10,
+            boxShadowOpacity: 6,
+            boxShadowBlur: 14,
+            padding: 22,
+            titleColor: '#2a9d8f',
+            titleSize: 22,
+            contentColor: '#666666',
+            contentSize: 15,
+            imageRadius: 6,
+            imageMarginBottom: 12,
+            imgSrc:
+              'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=600&q=80',
+            cardTitle: 'Minimalist Card',
+            cardContent:
+              'Clean and simple design with a light background and subtle accents.',
+          },
+          gradient: {
+            bgColor: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+            borderRadius: 20,
+            boxShadowOpacity: 35,
+            boxShadowBlur: 32,
+            padding: 24,
+            titleColor: '#ffffff',
+            titleSize: 26,
+            contentColor: '#f0f9ff',
+            contentSize: 17,
+            imageRadius: 14,
+            imageMarginBottom: 20,
+            imgSrc:
+              'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=600&q=80',
+            cardTitle: 'Gradient Card',
+            cardContent:
+              'Bold card with a bright gradient background and white text.',
+          },
+          softShadow: {
+            bgColor: '#ffffff',
+            borderRadius: 18,
+            boxShadowOpacity: 8,
+            boxShadowBlur: 20,
+            padding: 24,
+            titleColor: '#505050',
+            titleSize: 24,
+            contentColor: '#555555',
+            contentSize: 16,
+            imageRadius: 14,
+            imageMarginBottom: 20,
+            imgSrc:
+              'https://images.unsplash.com/photo-1454520149765-e8a902a9a4e3?auto=format&fit=crop&w=600&q=80',
+            cardTitle: 'Soft Shadow Card',
+            cardContent:
+              'Light background with soft drop shadows for an airy look.',
+          },
+          overlayText: {
+            bgColor: '#333333',
+            borderRadius: 24,
+            boxShadowOpacity: 40,
+            boxShadowBlur: 36,
+            padding: 28,
+            titleColor: '#ffffff',
+            titleSize: 28,
+            contentColor: '#ddd',
+            contentSize: 17,
+            imageRadius: 24,
+            imageMarginBottom: 22,
+            imgSrc:
+              'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80',
+            cardTitle: 'Overlay Text Card',
+            cardContent:
+              'Dark card with text overlay on dimmed image and strong shadows.',
+          },
+        }
+
+        // Set input values from preset
+        function applyPresetToInputs(preset) {
+          // Store the preset values in currentStyles
+          currentStyles = { ...preset } // Copy preset values to currentStyles
+
+          // Set input values based on the preset
+          colorPickers[0].input.value = preset.bgColor.startsWith(
+            'linear-gradient'
+          )
+            ? '#ffffff'
+            : preset.bgColor
+          colorPickers[0].label.style.backgroundColor =
+            colorPickers[0].input.value
+
+          colorPickers[1].input.value = preset.titleColor
+          colorPickers[1].label.style.backgroundColor = preset.titleColor
+
+          colorPickers[2].input.value = preset.contentColor
+          colorPickers[2].label.style.backgroundColor = preset.contentColor
+
+          borderRadiusRange.value = preset.borderRadius
+          boxShadowOpacityRange.value = preset.boxShadowOpacity
+          boxShadowBlurRange.value = preset.boxShadowBlur
+          paddingRange.value = preset.padding
+          titleSizeRange.value = preset.titleSize
+          contentSizeRange.value = preset.contentSize
+          imageRadiusRange.value = preset.imageRadius
+          imageMarginBottomRange.value = preset.imageMarginBottom
+
+          cardTitle.textContent = preset.cardTitle
+          cardContent.textContent = preset.cardContent
+          cardImage.src = preset.imgSrc
+        }
+
+        // Generate CSS box-shadow string
+        function generateBoxShadow(opacityPercent, blurPx) {
+          const opacity = (opacityPercent / 100).toFixed(2)
+          return `0 8px ${blurPx}px rgba(0,0,0,${opacity})`
+        }
+
+        // Update labels for range controls
+        function updateValueLabels() {
+          borderRadiusValue.textContent = borderRadiusRange.value + 'px'
+          boxShadowOpacityValue.textContent = boxShadowOpacityRange.value + '%'
+          boxShadowBlurValue.textContent = boxShadowBlurRange.value + 'px'
+          paddingValue.textContent = paddingRange.value + 'px'
+          titleSizeValue.textContent = titleSizeRange.value + 'px'
+          contentSizeValue.textContent = contentSizeRange.value + 'px'
+          imageRadiusValue.textContent = imageRadiusRange.value + 'px'
+          imageMarginBottomValue.textContent =
+            imageMarginBottomRange.value + 'px'
+        }
+
+        // Current preset tracker
+        let currentPresetName = 'default'
+
+        // Update card preview styles and text sizes dynamically
+        function updateCardStyles() {
+          updateValueLabels()
+
+          // Use the currentStyles object to get the values
+          let bg = currentStyles.bgColor
+          if (currentPresetName === 'gradient') {
+            bg = 'linear-gradient(135deg, #06b6d4, #3b82f6)'
+          }
+          if (currentPresetName === 'overlayText') {
+            bg = '#333333'
+          }
+
+          const borderRadius = borderRadiusRange.value + 'px'
+          const boxShadowOpacity = boxShadowOpacityRange.value
+          const boxShadowBlur = boxShadowBlurRange.value
+          const padding = paddingRange.value + 'px'
+          const titleColor = colorPickers[1].input.value
+          const titleSize = titleSizeRange.value + 'px'
+          const contentColor = colorPickers[2].input.value
+          const contentSize = contentSizeRange.value + 'px'
+          const imageRadius = imageRadiusRange.value + 'px'
+          const imageMarginBottom = imageMarginBottomRange.value + 'px'
+
+          const boxShadow = generateBoxShadow(boxShadowOpacity, boxShadowBlur)
+
+          cardPreview.style.setProperty('--bg-color', bg)
+          cardPreview.style.setProperty('--border-radius', borderRadius)
+          cardPreview.style.setProperty('--box-shadow', boxShadow)
+          cardPreview.style.setProperty('--padding', padding)
+          cardPreview.style.setProperty('--title-color', titleColor)
+          cardPreview.style.setProperty('--title-size', titleSize)
+          cardPreview.style.setProperty('--content-color', contentColor)
+          cardPreview.style.setProperty('--content-size', contentSize)
+          cardPreview.style.setProperty('--image-radius', imageRadius)
+          cardPreview.style.setProperty(
+            '--image-margin-bottom',
+            imageMarginBottom
+          )
+
+          // Dynamic font size styles for title and content
+          cardTitle.style.fontSize = titleSize
+          cardTitle.style.color = titleColor
+          cardContent.style.fontSize = contentSize
+          cardContent.style.color = contentColor
+
+          // Update swatch colors
+          colorPickers.forEach((cp) => {
+            cp.label.style.backgroundColor = cp.input.value
+          })
+
+          // Update CSS code area text
+          cssCodeEl.textContent = generateCssText()
+        }
+
+        // Generate CSS snippet text
+        function generateCssText() {
+          let bg = currentStyles.bgColor
+          if (currentPresetName === 'gradient') {
+            bg = 'linear-gradient(135deg, #06b6d4, #3b82f6)'
+          }
+          if (currentPresetName === 'overlayText') {
+            bg = '#333333'
+          }
+          const borderRadius = borderRadiusRange.value + 'px'
+          const boxShadowOpacity = boxShadowOpacityRange.value
+          const boxShadowBlur = boxShadowBlurRange.value + 'px'
+          const padding = paddingRange.value + 'px'
+          const titleColor = colorPickers[1].input.value
+          const titleSize = titleSizeRange.value + 'px'
+          const contentColor = colorPickers[2].input.value
+          const contentSize = contentSizeRange.value + 'px'
+          const imageRadius = imageRadiusRange.value + 'px'
+          const imageMarginBottom = imageMarginBottomRange.value + 'px'
+
+          const boxShadow = generateBoxShadow(
+            boxShadowOpacity,
+            boxShadowBlurRange.value
+          )
+
+          return `
+.custom-card {
+  background-color: ${
+    bg.includes('gradient')
+      ? '/* gradient background: see inline styles */'
+      : bg
+  };
+  background-image: ${bg.includes('gradient') ? bg : 'none'};
+  border-radius: ${borderRadius};
+  box-shadow: ${boxShadow};
+  padding: ${padding};
+  color: ${contentColor};
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 420px;
+  transition: all 0.3s ease;
+}
+
+.custom-card h3 {
+  color: ${titleColor};
+  font-size: ${titleSize};
+  margin-top: 0;
+  font-weight: 700;
+}
+
+.custom-card p {
+  font-size: ${contentSize};
+  margin-bottom: 1.25rem;
+  line-height: 1.4;
+}
+
+.custom-card img {
+  border-radius: ${imageRadius};
+  margin-bottom: ${imageMarginBottom};
+  max-width: 100%;
+}
+`.trim()
+        }
+
+        // Generate HTML snippet
+        function generateHtmlText() {
+          const imgSrc = cardImage.src
+          const imgAlt = cardImage.alt.replace(/"/g, '&quot;')
+          const title = cardTitle.textContent
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+          const content = cardContent.textContent
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+
+          return `
+<div class="custom-card">
+  <img src="${imgSrc}" alt="${imgAlt}" />
+  <h3>${title}</h3>
+  <p>${content}</p>
+</div>
+`.trim()
+        }
+
+        // Copy handlers
+        copyCssBtn.addEventListener('click', () => {
+          navigator.clipboard
+            .writeText(generateCssText())
+            .then(() => {
+              copyCssBtn.textContent = 'CSS Copied!'
+              copyCssBtn.disabled = true
+              setTimeout(() => {
+                copyCssBtn.textContent = 'Copy CSS Styles to Clipboard'
+                copyCssBtn.disabled = false
+              }, 1800)
+            })
+            .catch(() => {
+              alert('Copy failed. Please copy manually:\n' + generateCssText())
+            })
+        })
+
+        copyHtmlBtn.addEventListener('click', () => {
+          navigator.clipboard
+            .writeText(generateHtmlText())
+            .then(() => {
+              copyHtmlBtn.textContent = 'HTML Copied!'
+              copyHtmlBtn.disabled = true
+              setTimeout(() => {
+                copyHtmlBtn.textContent = 'Copy Card HTML to Clipboard'
+                copyHtmlBtn.disabled = false
+              }, 1800)
+            })
+            .catch(() => {
+              alert('Copy failed. Please copy manually:\n' + generateHtmlText())
+            })
+        })
+
+        // Preset select change handler
+        presetSelect.addEventListener('change', () => {
+          const selected = presetSelect.value
+          if (selected && presets[selected]) {
+            currentPresetName = selected
+            applyPresetToInputs(presets[selected])
+            updateCardStyles()
+          }
+        })
+
+        // Controls event listeners
+        const controls = [
+          borderRadiusRange,
+          boxShadowOpacityRange,
+          boxShadowBlurRange,
+          paddingRange,
+          titleSizeRange,
+          contentSizeRange,
+          imageRadiusRange,
+          imageMarginBottomRange,
+        ]
+        controls.forEach((ctrl) => {
+          ctrl.addEventListener('input', () => {
+            if (currentPresetName !== 'custom') {
+              currentPresetName = 'custom'
+              presetSelect.value = 'default'
+            }
+            updateCardStyles()
+          })
+        })
+
+        // Color pickers events and syncing labels
+        colorPickers.forEach(({ input, label }) => {
+          input.addEventListener('input', () => {
+            label.style.backgroundColor = input.value
+            if (currentPresetName !== 'custom') {
+              currentPresetName = 'custom'
+              presetSelect.value = 'default'
+            }
+            updateCardStyles()
+          })
+        })
+
+        // Initialize
+        applyPresetToInputs(presets.default)
+        updateCardStyles()
+      })()
+    </script>
+  </body>
+</html>
